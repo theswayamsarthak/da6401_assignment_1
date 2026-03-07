@@ -16,7 +16,7 @@ def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--weights", default=os.path.join(_HERE, "best_model.npy"))
     p.add_argument("--config",  default=os.path.join(_HERE, "best_config.json"))
-    p.add_argument("-d", "--dataset", default="mnist", choices=["mnist", "fashion"])
+    p.add_argument("-d", "--dataset", default=None, choices=["mnist", "fashion"])
     p.add_argument("--split", default="test", choices=["train", "val", "test"])
     return p.parse_args()
 
@@ -36,7 +36,8 @@ def main():
         loss=cfg["loss"],
     )
     model.load(args.weights)
-    X_train, y_train, X_val, y_val, X_test, y_test = load_dataset(args.dataset)
+    dataset = args.dataset if args.dataset is not None else cfg.get("dataset", "fashion")
+    X_train, y_train, X_val, y_val, X_test, y_test = load_dataset(dataset)
     splits = {"train": (X_train, y_train), "val": (X_val, y_val), "test": (X_test, y_test)}
     X, y = splits[args.split]
     preds = model.predict(X)
@@ -52,7 +53,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-# autograder expects parse_arguments (not parse_args)
-def parse_arguments():
-    return parse_args()
