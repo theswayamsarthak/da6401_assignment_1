@@ -12,11 +12,12 @@ from utils.metrics import compute_metrics, get_confusion_matrix
 
 
 def parse_args():
+    _here = os.path.dirname(os.path.abspath(__file__))
+    _weights_default = os.path.join(_here, "best_model.npy")
+    _config_default  = os.path.join(_here, "best_config.json")
     p = argparse.ArgumentParser()
-    p.add_argument("--weights", default="best_model.npy", help="path to .npy weights file")
-    p.add_argument("--config",  default="best_config.json", help="path to config json")
-    p.add_argument("-d", "--dataset", default="mnist", choices=["mnist", "fashion"])
-    p.add_argument("--split", default="test", choices=["train", "val", "test"])
+    p.add_argument("--weights", default=_weights_default, help="path to .npy weights file")
+    p.add_argument("--config",  default=_config_default,  help="path to config json")
     return p.parse_args()
 
 

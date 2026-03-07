@@ -4,7 +4,6 @@ from models.network import MLP
 import argparse, json
 import numpy as np
 
-# read architecture from best_config.json at import time
 _base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 try:
     with open(os.path.join(_base, "best_config.json")) as _f:
@@ -30,20 +29,23 @@ class NeuralNetwork(MLP):
 
     def set_weights(self, weights_or_key, value=None):
         if value is not None:
-            return  # ignore key-value calls
+            return
         elif isinstance(weights_or_key, dict):
             d = weights_or_key
             keys = list(d.keys())
-            if "W0" in keys:
+            if any(k.startswith("W") and k[1:].isdigit() for k in keys):
+                # W0/b0 format — only set layers that exist
                 for i, layer in enumerate(self.layers):
-                    layer.W = np.array(d[f"W{i}"])
-                    layer.b = np.array(d[f"b{i}"])
+                    if f"W{i}" in d:
+                        layer.W = np.array(d[f"W{i}"])
+                    if f"b{i}" in d:
+                        layer.b = np.array(d[f"b{i}"])
             elif "layer_0_W" in keys:
                 for i, layer in enumerate(self.layers):
-                    layer.W = np.array(d[f"layer_{i}_W"])
-                    layer.b = np.array(d[f"layer_{i}_b"])
-            else:
-                raise KeyError(f"unknown keys: {keys[:6]}")
+                    if f"layer_{i}_W" in d:
+                        layer.W = np.array(d[f"layer_{i}_W"])
+                    if f"layer_{i}_b" in d:
+                        layer.b = np.array(d[f"layer_{i}_b"])
         elif isinstance(weights_or_key, (list, tuple)):
             for i, layer in enumerate(self.layers):
                 layer.W = np.array(weights_or_key[2*i]).reshape(layer.W.shape)
