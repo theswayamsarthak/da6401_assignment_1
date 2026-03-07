@@ -12,33 +12,47 @@ class NeuralNetwork(MLP):
             input_size = 784
         super().__init__(input_size, hidden_sizes, output_size,
                         activation, weight_init, loss)
-        # store weights dict for set_weights
         self._weights_dict = {}
 
     def set_weights(self, weights_or_key, value=None):
-        # called as set_weights(dict) OR set_weights(key, value)
-        if value is not None:
-            # called as set_weights("layer_0_W", array)
-            self._weights_dict[weights_or_key] = value
-            # apply whenever we have all weights
-            n = len(self.layers)
-            if len(self._weights_dict) >= n * 2:
+        try:
+            # unwrap 0-d numpy object array if needed
+            if isinstance(weights_or_key, np.ndarray):
+                if weights_or_key.ndim == 0:
+                    weights_or_key = weights_or_key.item()
+                else:
+                    # plain numpy array list format
+                    for i, layer in enumerate(self.layers):
+                        layer.W = np.array(weights_or_key[2*i]).reshape(layer.W.shape)
+                        layer.b = np.array(weights_or_key[2*i+1]).reshape(layer.b.shape)
+                    return
+
+            if value is not None:
+                # set_weights("layer_0_W", array)
+                self._weights_dict[weights_or_key] = np.array(value)
+                if len(self._weights_dict) >= len(self.layers) * 2:
+                    for i, layer in enumerate(self.layers):
+                        layer.W = self._weights_dict[f"layer_{i}_W"]
+                        layer.b = self._weights_dict[f"layer_{i}_b"]
+            elif isinstance(weights_or_key, dict):
                 for i, layer in enumerate(self.layers):
-                    layer.W = np.array(self._weights_dict[f"layer_{i}_W"])
-                    layer.b = np.array(self._weights_dict[f"layer_{i}_b"])
-        elif isinstance(weights_or_key, dict):
-            for i, layer in enumerate(self.layers):
-                layer.W = np.array(weights_or_key[f"layer_{i}_W"])
-                layer.b = np.array(weights_or_key[f"layer_{i}_b"])
-        elif isinstance(weights_or_key, (list, tuple)):
-            for i, layer in enumerate(self.layers):
-                layer.W = np.array(weights_or_key[2*i]).reshape(layer.W.shape)
-                layer.b = np.array(weights_or_key[2*i+1]).reshape(layer.b.shape)
-        elif isinstance(weights_or_key, str):
-            params = np.load(weights_or_key, allow_pickle=True).item()
-            for i, layer in enumerate(self.layers):
-                layer.W = params[f"layer_{i}_W"]
-                layer.b = params[f"layer_{i}_b"]
+                    layer.W = np.array(weights_or_key[f"layer_{i}_W"])
+                    layer.b = np.array(weights_or_key[f"layer_{i}_b"])
+            elif isinstance(weights_or_key, (list, tuple)):
+                for i, layer in enumerate(self.layers):
+                    layer.W = np.array(weights_or_key[2*i]).reshape(layer.W.shape)
+                    layer.b = np.array(weights_or_key[2*i+1]).reshape(layer.b.shape)
+            elif isinstance(weights_or_key, str):
+                if os.path.exists(weights_or_key):
+                    params = np.load(weights_or_key, allow_pickle=True).item()
+                else:
+                    # it IS a key string but value is None — store empty and skip
+                    return
+                for i, layer in enumerate(self.layers):
+                    layer.W = params[f"layer_{i}_W"]
+                    layer.b = params[f"layer_{i}_b"]
+        except Exception as e:
+            raise RuntimeError(f"set_weights failed with input type {type(weights_or_key)}: {e}")
 
     def get_weights(self):
         weights = []
