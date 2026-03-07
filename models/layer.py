@@ -9,13 +9,10 @@ class DenseLayer:
         self.out_dim = out_dim
         self.activation_name = activation
         self.act = get_activation(activation)
-
         self.W, self.b = self._init_weights(weight_init)
-
         # these get filled during backward(), exposed for the autograder
         self.grad_W = np.zeros_like(self.W)
         self.grad_b = np.zeros_like(self.b)
-
         # cache needed for backprop
         self._input = None
         self._z = None     # pre-activation
@@ -39,7 +36,6 @@ class DenseLayer:
 
     def _init_weights(self, method):
         if method == "xavier":
-            # glorot uniform - generally works well out of the box
             lim = np.sqrt(6.0 / (self.in_dim + self.out_dim))
             W = np.random.uniform(-lim, lim, (self.in_dim, self.out_dim))
         elif method == "random":
@@ -52,22 +48,21 @@ class DenseLayer:
         return W, b
 
     def forward(self, X):
+        if X.ndim == 1:
+            X = X.reshape(1, -1)
         self._input = X
         self._z = X @ self.W + self.b
         self._a = self.act.forward(self._z)
         return self._a
 
     def backward(self, delta, weight_decay=0.0):
-        # delta here is already the grad w.r.t. pre-activation z (normalized by loss)
-        # so no extra /N needed here
+        if delta.ndim == 1:
+            delta = delta.reshape(1, -1)
         self.grad_W = self._input.T @ delta + weight_decay * self.W
         self.grad_b = delta.sum(axis=0, keepdims=True)
-
-        # pass gradient back to previous layer (w.r.t. its output/activation)
         return delta @ self.W.T
 
     def activation_grad(self, upstream):
-        # multiply incoming gradient by local activation derivative
         return upstream * self.act.backward(self._z)
 
     def get_params(self):
