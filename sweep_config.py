@@ -1,8 +1,3 @@
-# W&B sweep config - run this once to register the sweep, then launch agents
-# Usage:
-#   python sweep_config.py          <- prints the sweep id
-#   wandb agent <your-entity>/da6401-mlp/<sweep_id>
-
 import wandb
 import subprocess
 import sys
