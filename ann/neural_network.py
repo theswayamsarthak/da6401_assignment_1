@@ -22,7 +22,6 @@ class NeuralNetwork(MLP):
             keys = list(d.keys())
             if any(k.startswith("W") and k[1:].isdigit() for k in keys):
                 n = sum(1 for k in keys if k.startswith("W") and k[1:].isdigit())
-                # rebuild layers to match incoming weight shapes exactly
                 new_layers = []
                 for i in range(n):
                     W = np.array(d[f"W{i}"])
@@ -33,11 +32,16 @@ class NeuralNetwork(MLP):
                     layer.b = b.reshape(1, -1)
                     new_layers.append(layer)
                 self.layers = new_layers
+                # warm up forward cache with dummy input
+                in_dim = self.layers[0].W.shape[0]
+                self.forward(np.zeros((1, in_dim)))
             elif "layer_0_W" in keys:
                 for i, layer in enumerate(self.layers):
                     if f"layer_{i}_W" in d:
                         layer.W = np.array(d[f"layer_{i}_W"])
                         layer.b = np.array(d[f"layer_{i}_b"])
+                in_dim = self.layers[0].W.shape[0]
+                self.forward(np.zeros((1, in_dim)))
         elif isinstance(weights_or_key, (list, tuple)):
             for i, layer in enumerate(self.layers):
                 layer.W = np.array(weights_or_key[2*i]).reshape(layer.W.shape)
