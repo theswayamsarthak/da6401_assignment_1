@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.wandb/
+sweep_*.npy
+sweep_*.json
+.ipynb_checkpoints/
