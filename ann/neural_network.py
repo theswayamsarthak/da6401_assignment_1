@@ -15,7 +15,6 @@ class NeuralNetwork(MLP):
                         activation, weight_init, loss)
 
     def backward(self, X, y_onehot, weight_decay=0.0):
-        # always re-run forward first to ensure cache is correct
         logits = self.forward(X)
         loss = self.loss_fn.forward(logits, y_onehot)
         delta = self.loss_fn.backward(logits, y_onehot)
@@ -33,7 +32,9 @@ class NeuralNetwork(MLP):
             keys = list(d.keys())
             if any(k.startswith("W") and k[1:].isdigit() for k in keys):
                 n = sum(1 for k in keys if k.startswith("W") and k[1:].isdigit())
-                new_layers = []
+                # rebuild self.layers IN PLACE by clearing and re-appending
+                # so external references to self.layers list stay valid
+                self.layers.clear()
                 for i in range(n):
                     W = np.array(d[f"W{i}"])
                     b = np.array(d[f"b{i}"])
@@ -41,8 +42,7 @@ class NeuralNetwork(MLP):
                     layer = DenseLayer(W.shape[0], W.shape[1], act, self.weight_init)
                     layer.W = W
                     layer.b = b.reshape(1, -1)
-                    new_layers.append(layer)
-                self.layers = new_layers
+                    self.layers.append(layer)
             elif "layer_0_W" in keys:
                 for i, layer in enumerate(self.layers):
                     if f"layer_{i}_W" in d:
