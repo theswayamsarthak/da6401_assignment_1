@@ -14,6 +14,17 @@ class NeuralNetwork(MLP):
         super().__init__(input_size, hidden_sizes, output_size,
                         activation, weight_init, loss)
 
+    def backward(self, X, y_onehot, weight_decay=0.0):
+        # always re-run forward first to ensure cache is correct
+        logits = self.forward(X)
+        loss = self.loss_fn.forward(logits, y_onehot)
+        delta = self.loss_fn.backward(logits, y_onehot)
+        for layer in reversed(self.layers):
+            if layer.activation_name != "linear":
+                delta = layer.activation_grad(delta)
+            delta = layer.backward(delta, weight_decay)
+        return loss
+
     def set_weights(self, weights_or_key, value=None):
         if value is not None:
             return
