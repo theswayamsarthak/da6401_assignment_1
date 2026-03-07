@@ -31,7 +31,7 @@ def parse_args():
                    choices=["random", "xavier"])
     p.add_argument("--wandb_project",  default="da6401-mlp")
     p.add_argument("--wandb_entity",   default=None)
-    p.add_argument("--no_wandb",       action="store_true", default=True)
+    p.add_argument("--no_wandb",       action="store_true")
     p.add_argument("--save_path",      default="best_model.npy")
     p.add_argument("--config_path",    default="best_config.json")
     p.add_argument("--seed",           type=int, default=42)
