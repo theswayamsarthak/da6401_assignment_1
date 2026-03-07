@@ -1,28 +1,49 @@
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models.network import MLP
-import argparse
+import argparse, json
 import numpy as np
 
+# read architecture from best_config.json at import time
+_base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+try:
+    with open(os.path.join(_base, "best_config.json")) as _f:
+        _cfg = json.load(_f)
+    _hidden = _cfg["hidden_sizes"]
+    _act    = _cfg.get("activation", "relu")
+    _init   = _cfg.get("weight_init", "xavier")
+    _loss   = _cfg.get("loss", "cross_entropy")
+except:
+    _hidden, _act, _init, _loss = [128,128,128], "relu", "xavier", "cross_entropy"
+
 class NeuralNetwork(MLP):
-    def __init__(self, input_size=784, hidden_sizes=[128, 128, 128],
-                 output_size=10, activation="relu",
-                 weight_init="xavier", loss="cross_entropy"):
+    def __init__(self, input_size=784, hidden_sizes=None,
+                 output_size=10, activation=None,
+                 weight_init=None, loss=None):
         if isinstance(input_size, argparse.Namespace):
             input_size = 784
-        super().__init__(input_size, hidden_sizes, output_size,
-                        activation, weight_init, loss)
+        hs  = hidden_sizes if hidden_sizes is not None else _hidden
+        act = activation   if activation   is not None else _act
+        wi  = weight_init  if weight_init  is not None else _init
+        ls  = loss         if loss         is not None else _loss
+        super().__init__(input_size, hs, output_size, act, wi, ls)
 
     def set_weights(self, weights_or_key, value=None):
         if value is not None:
-            # called as set_weights(key, value) — not used, ignore
-            return
+            return  # ignore key-value calls
         elif isinstance(weights_or_key, dict):
             d = weights_or_key
-            # format: W0, b0, W1, b1, ... Wn, bn
-            for i, layer in enumerate(self.layers):
-                layer.W = np.array(d[f"W{i}"])
-                layer.b = np.array(d[f"b{i}"])
+            keys = list(d.keys())
+            if "W0" in keys:
+                for i, layer in enumerate(self.layers):
+                    layer.W = np.array(d[f"W{i}"])
+                    layer.b = np.array(d[f"b{i}"])
+            elif "layer_0_W" in keys:
+                for i, layer in enumerate(self.layers):
+                    layer.W = np.array(d[f"layer_{i}_W"])
+                    layer.b = np.array(d[f"layer_{i}_b"])
+            else:
+                raise KeyError(f"unknown keys: {keys[:6]}")
         elif isinstance(weights_or_key, (list, tuple)):
             for i, layer in enumerate(self.layers):
                 layer.W = np.array(weights_or_key[2*i]).reshape(layer.W.shape)
