@@ -13,8 +13,8 @@ from utils.metrics import compute_metrics, get_confusion_matrix
 
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument("--weights", required=True, help="path to .npy weights file")
-    p.add_argument("--config",  required=True, help="path to config json")
+    p.add_argument("--weights", default="best_model.npy", help="path to .npy weights file")
+    p.add_argument("--config",  default="best_config.json", help="path to config json")
     p.add_argument("-d", "--dataset", default="mnist", choices=["mnist", "fashion"])
     p.add_argument("--split", default="test", choices=["train", "val", "test"])
     return p.parse_args()
