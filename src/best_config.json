@@ -14,5 +14,5 @@
   "weight_decay": 0.001,
   "batch_size": 32,
   "epochs": 15,
-  "dataset": "mnist"
+  "dataset": "fashion"
 }
