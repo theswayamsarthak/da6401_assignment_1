@@ -13,14 +13,12 @@ class MLP:
         self.weight_init = weight_init
         self.loss_name = loss
         self.loss_fn = get_loss(loss)
-
         self.layers = self._build()
 
     def _build(self):
         layers = []
         dims = [self.input_size] + self.hidden_sizes + [self.output_size]
         for i in range(len(dims) - 1):
-            # last layer is linear (logits), softmax applied inside loss
             act = self.activation_name if i < len(dims) - 2 else "linear"
             layers.append(DenseLayer(dims[i], dims[i+1], act, self.weight_init))
         return layers
@@ -29,7 +27,7 @@ class MLP:
         out = X
         for layer in self.layers:
             out = layer.forward(out)
-        return out  # raw logits
+        return out
 
     def predict_proba(self, X):
         return _softmax(self.forward(X))
@@ -38,14 +36,16 @@ class MLP:
         return np.argmax(self.predict_proba(X), axis=1)
 
     def backward(self, X, y_onehot, weight_decay=0.0):
+        if X.ndim == 1:
+            X = X.reshape(1, -1)
+        if y_onehot.ndim == 1:
+            y_onehot = y_onehot.reshape(1, -1)
+
         logits = self.forward(X)
         loss = self.loss_fn.forward(logits, y_onehot)
-
-        # grad w.r.t. logits (already normalized by N inside loss.backward)
         delta = self.loss_fn.backward(logits, y_onehot)
 
         for layer in reversed(self.layers):
-            # for hidden layers: convert grad w.r.t. activation -> grad w.r.t. z
             if layer.activation_name != "linear":
                 delta = layer.activation_grad(delta)
             delta = layer.backward(delta, weight_decay)
