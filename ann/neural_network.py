@@ -2,7 +2,7 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models.network import MLP
 from models.layer import DenseLayer
-import argparse, json
+import argparse
 import numpy as np
 
 class NeuralNetwork(MLP):
@@ -32,16 +32,11 @@ class NeuralNetwork(MLP):
                     layer.b = b.reshape(1, -1)
                     new_layers.append(layer)
                 self.layers = new_layers
-                # warm up forward cache with dummy input
-                in_dim = self.layers[0].W.shape[0]
-                self.forward(np.zeros((1, in_dim)))
             elif "layer_0_W" in keys:
                 for i, layer in enumerate(self.layers):
                     if f"layer_{i}_W" in d:
                         layer.W = np.array(d[f"layer_{i}_W"])
                         layer.b = np.array(d[f"layer_{i}_b"])
-                in_dim = self.layers[0].W.shape[0]
-                self.forward(np.zeros((1, in_dim)))
         elif isinstance(weights_or_key, (list, tuple)):
             for i, layer in enumerate(self.layers):
                 layer.W = np.array(weights_or_key[2*i]).reshape(layer.W.shape)
