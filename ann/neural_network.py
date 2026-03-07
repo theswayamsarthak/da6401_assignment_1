@@ -14,16 +14,6 @@ class NeuralNetwork(MLP):
         super().__init__(input_size, hidden_sizes, output_size,
                         activation, weight_init, loss)
 
-    def backward(self, X, y_onehot, weight_decay=0.0):
-        logits = super().forward(X)
-        loss = self.loss_fn.forward(logits, y_onehot)
-        delta = self.loss_fn.backward(logits, y_onehot)
-        for layer in reversed(self.layers):
-            if layer.activation_name != "linear":
-                delta = layer.activation_grad(delta)
-            delta = layer.backward(delta, weight_decay)
-        return loss
-
     def set_weights(self, weights_or_key, value=None):
         if value is not None:
             return
@@ -32,24 +22,16 @@ class NeuralNetwork(MLP):
             keys = list(d.keys())
             if any(k.startswith("W") and k[1:].isdigit() for k in keys):
                 n = sum(1 for k in keys if k.startswith("W") and k[1:].isdigit())
-                # check if layers match — if not rebuild
-                if n != len(self.layers) or                    any(np.array(d[f"W{i}"]).shape != self.layers[i].W.shape 
-                       for i in range(min(n, len(self.layers)))):
-                    new_layers = []
-                    for i in range(n):
-                        W = np.array(d[f"W{i}"])
-                        b = np.array(d[f"b{i}"])
-                        act = self.activation_name if i < n-1 else "linear"
-                        layer = DenseLayer(W.shape[0], W.shape[1], act, self.weight_init)
-                        layer.W = W.copy()
-                        layer.b = b.reshape(1, -1)
-                        new_layers.append(layer)
-                    self.layers = new_layers
-                else:
-                    # same architecture — set in place
-                    for i, layer in enumerate(self.layers):
-                        layer.W = np.array(d[f"W{i}"]).copy()
-                        layer.b = np.array(d[f"b{i}"]).reshape(1, -1)
+                new_layers = []
+                for i in range(n):
+                    W = np.array(d[f"W{i}"])
+                    b = np.array(d[f"b{i}"])
+                    act = self.activation_name if i < n-1 else "linear"
+                    layer = DenseLayer(W.shape[0], W.shape[1], act, self.weight_init)
+                    layer.W = W.copy()
+                    layer.b = b.reshape(1, -1)
+                    new_layers.append(layer)
+                self.layers = new_layers
             elif "layer_0_W" in keys:
                 for i, layer in enumerate(self.layers):
                     if f"layer_{i}_W" in d:
