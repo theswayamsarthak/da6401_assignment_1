@@ -4,28 +4,15 @@ from models.network import MLP
 import argparse, json
 import numpy as np
 
-_base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-try:
-    with open(os.path.join(_base, "best_config.json")) as _f:
-        _cfg = json.load(_f)
-    _hidden = _cfg["hidden_sizes"]
-    _act    = _cfg.get("activation", "relu")
-    _init   = _cfg.get("weight_init", "xavier")
-    _loss   = _cfg.get("loss", "cross_entropy")
-except:
-    _hidden, _act, _init, _loss = [128,128,128], "relu", "xavier", "cross_entropy"
-
 class NeuralNetwork(MLP):
-    def __init__(self, input_size=784, hidden_sizes=None,
-                 output_size=10, activation=None,
-                 weight_init=None, loss=None):
+    def __init__(self, input_size=784, hidden_sizes=[128, 128, 128],
+                 output_size=10, activation="relu",
+                 weight_init="xavier", loss="cross_entropy"):
         if isinstance(input_size, argparse.Namespace):
             input_size = 784
-        hs  = hidden_sizes if hidden_sizes is not None else _hidden
-        act = activation   if activation   is not None else _act
-        wi  = weight_init  if weight_init  is not None else _init
-        ls  = loss         if loss         is not None else _loss
-        super().__init__(input_size, hs, output_size, act, wi, ls)
+        # use exactly what is passed — no config overrides
+        super().__init__(input_size, hidden_sizes, output_size,
+                        activation, weight_init, loss)
 
     def set_weights(self, weights_or_key, value=None):
         if value is not None:
@@ -34,7 +21,6 @@ class NeuralNetwork(MLP):
             d = weights_or_key
             keys = list(d.keys())
             if any(k.startswith("W") and k[1:].isdigit() for k in keys):
-                # W0/b0 format — only set layers that exist
                 for i, layer in enumerate(self.layers):
                     if f"W{i}" in d:
                         layer.W = np.array(d[f"W{i}"])
