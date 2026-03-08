@@ -42,7 +42,10 @@ class NeuralNetwork(MLP):
                     W = np.array(d[f"W{i}"])
                     b = np.array(d[f"b{i}"])
                     act = self.activation_name if i < n-1 else "linear"
-                    layer = DenseLayer(W.shape[0], W.shape[1], act, self.weight_init)
+                    if W.shape[0] == len(b.flatten()) and W.shape[0] != W.shape[1]:
+                        W = W.T
+                    in_dim, out_dim = W.shape
+                    layer = DenseLayer(in_dim, out_dim, act, self.weight_init)
                     layer.W = W
                     layer.b = b.reshape(1, -1)
                     new_layers.append(layer)
