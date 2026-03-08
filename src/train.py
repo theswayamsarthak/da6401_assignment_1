@@ -4,7 +4,8 @@ import os
 import sys
 import numpy as np
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, _HERE)
 
 from models.network import MLP
 from optimizers.optimizers import get_optimizer
@@ -32,8 +33,8 @@ def parse_args():
     p.add_argument("--wandb_project",  default="da6401-mlp")
     p.add_argument("--wandb_entity",   default=None)
     p.add_argument("--no_wandb",       action="store_true")
-    p.add_argument("--save_path",      default="best_model.npy")
-    p.add_argument("--config_path",    default="best_config.json")
+    p.add_argument("--save_path",      default=os.path.join(_HERE, "best_model.npy"))
+    p.add_argument("--config_path",    default=os.path.join(_HERE, "best_config.json"))
     p.add_argument("--seed",           type=int, default=42)
     return p.parse_args()
 
@@ -96,11 +97,9 @@ def train(args):
             n_batches += 1
 
         avg_loss = total_loss / n_batches
-        train_metrics = compute_metrics(y_train, model.predict(X_train))
-        val_metrics   = compute_metrics(y_val,   model.predict(X_val))
+        val_metrics = compute_metrics(y_val, model.predict(X_val))
 
         print(f"\nepoch {epoch}/{args.epochs}  loss={avg_loss:.4f}")
-        print_metrics(train_metrics, "train")
         print_metrics(val_metrics, "val")
 
         if use_wandb:
@@ -108,8 +107,6 @@ def train(args):
             wandb.log({
                 "epoch": epoch,
                 "train_loss": avg_loss,
-                "train_accuracy": train_metrics["accuracy"],
-                "train_f1": train_metrics["f1"],
                 "val_accuracy": val_metrics["accuracy"],
                 "val_f1": val_metrics["f1"],
             })
