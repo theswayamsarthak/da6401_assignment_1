@@ -14,12 +14,12 @@ from utils.metrics import compute_metrics, print_metrics
 
 
 def parse_args():
-    p = argparse.ArgumentParser()
-    p.add_argument("-d",   "--dataset",       default="mnist", choices=["mnist", "fashion"])
+    p = argparse.ArgumentParser(description='Train a neural network')
+    p.add_argument("-d",   "--dataset",       default="mnist", choices=["mnist", "fashion", "fashion_mnist"])
     p.add_argument("-e",   "--epochs",         type=int, default=10)
     p.add_argument("-b",   "--batch_size",     type=int, default=64)
     p.add_argument("-l",   "--loss",           default="cross_entropy",
-                   choices=["cross_entropy", "mean_squared_error"])
+                   choices=["cross_entropy", "mean_squared_error", "mse"])
     p.add_argument("-o",   "--optimizer",      default="adam",
                    choices=["sgd", "momentum", "nag", "rmsprop", "adam", "nadam"])
     p.add_argument("-lr",  "--learning_rate",  type=float, default=0.001)
@@ -30,13 +30,15 @@ def parse_args():
                    choices=["sigmoid", "tanh", "relu"])
     p.add_argument("-wi",  "--weight_init",    default="xavier",
                    choices=["random", "xavier"])
-    p.add_argument("--wandb_project",  default="da6401-mlp")
-    p.add_argument("--wandb_entity",   default=None)
-    p.add_argument("--no_wandb",       action="store_true")
-    p.add_argument("--save_path",      default=os.path.join(_HERE, "best_model.npy"))
-    p.add_argument("--config_path",    default=os.path.join(_HERE, "best_config.json"))
-    p.add_argument("--seed",           type=int, default=42)
+    p.add_argument("--wandb_project",          default="da6401-mlp")
+    p.add_argument("--wandb_entity",           default=None)
+    p.add_argument("--no_wandb",               action="store_true")
+    p.add_argument("--model_save_path",        default="best_model.npy")
+    p.add_argument("--config_path",            default="best_config.json")
+    p.add_argument("--seed",                   type=int, default=42)
     return p.parse_args()
+
+parse_arguments = parse_args
 
 
 def train(args):
@@ -57,7 +59,7 @@ def train(args):
         output_size=10,
         activation=args.activation,
         weight_init=args.weight_init,
-        loss=args.loss,
+        loss=args.loss if args.loss != "mse" else "mean_squared_error",
     )
     print(model)
 
@@ -114,7 +116,7 @@ def train(args):
         if val_metrics["f1"] > best_val_f1:
             best_val_f1 = val_metrics["f1"]
             best_epoch = epoch
-            model.save(args.save_path)
+            model.save(args.model_save_path)
             cfg = model.get_config()
             cfg.update({
                 "optimizer": args.optimizer,
@@ -128,7 +130,7 @@ def train(args):
                 json.dump(cfg, f, indent=2)
 
     print(f"\nbest val f1={best_val_f1:.4f} at epoch {best_epoch}")
-    model.load(args.save_path)
+    model.load(args.model_save_path)
     test_metrics = compute_metrics(y_test, model.predict(X_test))
     print("\n--- test results (best model) ---")
     print_metrics(test_metrics, "test")
@@ -146,6 +148,11 @@ def train(args):
     return model, test_metrics
 
 
-if __name__ == "__main__":
+def main():
     args = parse_args()
     train(args)
+    print("Training complete!")
+
+
+if __name__ == '__main__':
+    main()
