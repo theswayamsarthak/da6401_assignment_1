@@ -4,7 +4,8 @@ import os
 import sys
 import numpy as np
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+_HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, _HERE)
 
 from models.network import MLP
 from optimizers.optimizers import get_optimizer
@@ -32,8 +33,8 @@ def parse_args():
     p.add_argument("--wandb_project",  default="da6401-mlp")
     p.add_argument("--wandb_entity",   default=None)
     p.add_argument("--no_wandb",       action="store_true")
-    p.add_argument("--save_path",      default="best_model.npy")
-    p.add_argument("--config_path",    default="best_config.json")
+    p.add_argument("--save_path",      default=os.path.join(_HERE, "best_model.npy"))
+    p.add_argument("--config_path",    default=os.path.join(_HERE, "best_config.json"))
     p.add_argument("--seed",           type=int, default=42)
     return p.parse_args()
 
@@ -41,7 +42,6 @@ def parse_args():
 def train(args):
     np.random.seed(args.seed)
 
-    # figure out hidden layer sizes
     if len(args.hidden_size) == 1:
         hidden_sizes = args.hidden_size * args.num_layers
     else:
@@ -61,7 +61,6 @@ def train(args):
     )
     print(model)
 
-    # set up optimizer kwargs depending on which one we're using
     opt_kwargs = {"learning_rate": args.learning_rate, "weight_decay": args.weight_decay}
     if args.optimizer in ("momentum", "nag"):
         opt_kwargs["beta"] = 0.9
@@ -99,7 +98,6 @@ def train(args):
 
         avg_loss = total_loss / n_batches
 
-        # evaluate on both splits each epoch - slow but useful for debugging
         train_metrics = compute_metrics(y_train, model.predict(X_train))
         val_metrics   = compute_metrics(y_val,   model.predict(X_val))
 
@@ -136,7 +134,6 @@ def train(args):
 
     print(f"\nbest val f1={best_val_f1:.4f} at epoch {best_epoch}")
 
-    # reload best weights and get final test numbers
     model.load(args.save_path)
     test_metrics = compute_metrics(y_test, model.predict(X_test))
     print("\n--- test results (best model) ---")
